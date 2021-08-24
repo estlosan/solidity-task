@@ -1,0 +1,27 @@
+{
+  "name": "solidity-task",
+  "version": "1.0.0",
+  "description": "",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/estlosan/solidity-task.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/estlosan/solidity-task/issues"
+  },
+  "homepage": "https://github.com/estlosan/solidity-task#readme",
+  "dependencies": {
+    "chai": "^4.3.4",
+    "mocha": "^9.1.0",
+    "web3-utils": "^1.5.2"
+  }
+}
