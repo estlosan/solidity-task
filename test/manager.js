@@ -8,4 +8,12 @@ contract("Manager", ([admin, user1, user2, user3]) => {
         let manager = await Manager.new(size);
         (await manager.totalSize()).toNumber().should.be.equal(size);
     }) 
+
+    describe("Add new user", () => {
+
+    });
+
+    describe("Remove user", () => {
+
+    });
 })
