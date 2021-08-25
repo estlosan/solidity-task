@@ -12,6 +12,16 @@ contract Manager {
         bool canRemove;
         bool isUser; // Check if user exists
     }
+
+    event UserAdded (
+        address newUser,
+        bool canAdd,
+        bool canRemove
+    );
+
+    event UserRemoved (
+        address userAddr
+    );
     
     mapping (address => User) public users;
     
@@ -62,11 +72,7 @@ contract Manager {
         _;
     }
 
-    function getUserChildren(address userAddr) public view returns (address[] memory) {
-        return users[userAddr].childrenUsers;
-    }
-    
-    /**
+        /**
      * @dev Add new user to hierarchy
      * @param userToAdd address new user
      * @param _canAdd add new user permission
@@ -86,14 +92,32 @@ contract Manager {
     }
     
     /**
-     * @dev Remove user and replace removed by one of his children
+     * @dev Remove user and replace removed by one of its children
      * @param userAddr address user to remove
      */
     function removeUser(address userAddr) external onlyExists() onlyRemove() {
         require(userAddr != admin, "You can't remove admin");
+        address[] memory childrenUser = users[userAddr].childrenUsers;
+        address newLeader;
+        if(childrenUser.length >= 1) {
+            newLeader = childrenUser[0];
+            users[newLeader].parentUser = users[userAddr].parentUser;
+            for(uint i = 1; i < childrenUser.length; i++){
+                users[newLeader].childrenUsers.push(childrenUser[i]);
+                users[childrenUser[i]].parentUser = newLeader;
+            }
+        }
+
         address[] storage parentChilds = users[users[userAddr].parentUser].childrenUsers;
         delete users[userAddr];
-        if(parentChilds.length > 1) {
+        if(parentChilds.length >= 1 && newLeader != address(0)) {
+            for(uint i = 0; i < parentChilds.length; i++) {
+                if(parentChilds[i] == userAddr){
+                    parentChilds[i] = newLeader;
+                    break;
+                }
+            }
+        } else if (parentChilds.length >= 1 && newLeader == address(0)){
             for(uint i = 0; i < parentChilds.length; i++) {
                 if(parentChilds[i] == userAddr){
                     address auxAddr = parentChilds[parentChilds.length - 1];
@@ -102,13 +126,19 @@ contract Manager {
                     break;
                 }
             }
+            parentChilds.pop();
+        } else {
+            parentChilds.pop();
         }
-        parentChilds.pop();
         size--;
-        //event
+
+        emit UserRemoved(userAddr);
+    }
+
+    function getUserChildren(address userAddr) external view returns (address[] memory) {
+        return users[userAddr].childrenUsers;
     }
     
-
     /**
      * @dev Add user
      * @param userToAdd address new user
@@ -124,6 +154,6 @@ contract Manager {
         user.isUser = true;
         users[userToAdd] = user;
         size ++;
-        //event
+        emit UserAdded(userToAdd, _canAdd, _canRemove);
     }
 }

@@ -5,7 +5,7 @@ const {
     expectRevert,
   } = require('@openzeppelin/test-helpers');
 
-contract("Manager", ([admin, user1, user2, user3]) => {
+contract("Manager", ([admin, user1, user2, user3, user4, user5]) => {
 
     it('Should return the size of hierarchy', async () => {
         const size = 5;
@@ -31,15 +31,18 @@ contract("Manager", ([admin, user1, user2, user3]) => {
         const size = 2;
         let manager;
         beforeEach('Deploy contract', async () => {
-            manager = await Manager.new(size, { from: admin });
+            manager = await Manager.new(totalSize, { from: admin });
         });
 
         it('should add new user with admin with all permission', async () => {
             const expectedCanAdd = true;
             const expectedCanRemove = true;
+            const expectedChildren = [user1];
             await manager.addUser(user1, expectedCanAdd, expectedCanRemove, { from: admin });
 
             (await manager.size()).toNumber().should.be.equal(size);
+            const children = await manager.getUserChildren(admin);
+            expect(children).to.have.all.members(expectedChildren);
             const { parentUser, canAdd, canRemove, isUser } = await manager.users(user1);
             parentUser.should.be.equal(admin);
             canAdd.should.be.equal(expectedCanAdd);
@@ -50,9 +53,12 @@ contract("Manager", ([admin, user1, user2, user3]) => {
         it('should add new user with admin with add permission', async () => {
             const expectedCanAdd = true;
             const expectedCanRemove = false;
+            const expectedChildren = [user1];
             await manager.addUser(user1, expectedCanAdd, expectedCanRemove, { from: admin });
 
             (await manager.size()).toNumber().should.be.equal(size);
+            const children = await manager.getUserChildren(admin);
+            expect(children).to.have.all.members(expectedChildren);
             const { parentUser, canAdd, canRemove, isUser } = await manager.users(user1);
             parentUser.should.be.equal(admin);
             canAdd.should.be.equal(expectedCanAdd);
@@ -63,9 +69,12 @@ contract("Manager", ([admin, user1, user2, user3]) => {
         it('should add new user with admin with remove permission', async () => {
             const expectedCanAdd = false;
             const expectedCanRemove = true;
+            const expectedChildren = [user1];
             await manager.addUser(user1, expectedCanAdd, expectedCanRemove, { from: admin });
 
             (await manager.size()).toNumber().should.be.equal(size);
+            const children = await manager.getUserChildren(admin);
+            expect(children).to.have.all.members(expectedChildren);
             const { parentUser, canAdd, canRemove, isUser } = await manager.users(user1);
             parentUser.should.be.equal(admin);
             canAdd.should.be.equal(expectedCanAdd);
@@ -76,14 +85,30 @@ contract("Manager", ([admin, user1, user2, user3]) => {
         it('should add new user with admin with no permission', async () => {
             const expectedCanAdd = false;
             const expectedCanRemove = false;
+            const expectedChildren = [user1];
             await manager.addUser(user1, expectedCanAdd, expectedCanRemove, { from: admin });
 
             (await manager.size()).toNumber().should.be.equal(size);
+            const children = await manager.getUserChildren(admin);
+            expect(children).to.have.all.members(expectedChildren);
             const { parentUser, canAdd, canRemove, isUser } = await manager.users(user1);
             parentUser.should.be.equal(admin);
             canAdd.should.be.equal(expectedCanAdd);
             canRemove.should.be.equal(expectedCanRemove);
             isUser.should.be.equal(true);
+        });
+
+        it('should add two new users with admin', async () => {
+            const expectedCanAdd = false;
+            const expectedCanRemove = false;
+            const expectedChildren = [user1, user2];
+            const expectedSize = 3;
+            await manager.addUser(user1, expectedCanAdd, expectedCanRemove, { from: admin });
+            await manager.addUser(user2, expectedCanAdd, expectedCanRemove, { from: admin });
+
+            (await manager.size()).toNumber().should.be.equal(expectedSize);
+            const children = await manager.getUserChildren(admin);
+            expect(children).to.have.all.members(expectedChildren);
         });
 
         it('should deny add new user with user1 (outside hierarchy)', async () => {
@@ -159,14 +184,15 @@ contract("Manager", ([admin, user1, user2, user3]) => {
             });
 
             it('should remove user1 with admin', async () => {
+                const expectedChildren = [];
                 await manager.addUser(user1, true, true, { from: admin });
 
-                const children = await manager.getUserChildren(admin);
                 await manager.removeUser(user1, { from: admin });
     
                 (await manager.size()).toNumber().should.be.equal(size);
                 const { isUser } = await manager.users(user1);
-                const children1 = await manager.getUserChildren(admin);
+                const children = await manager.getUserChildren(admin);
+                expect(children).to.have.all.members(expectedChildren);
                 isUser.should.be.equal(false);
             });
 
@@ -187,6 +213,105 @@ contract("Manager", ([admin, user1, user2, user3]) => {
                     manager.removeUser(user1, { from: user2 }),
                     "You don't have remove permission"
                 );
+            });
+
+            it('should deny remove admin with user 1', async () => {
+                await manager.addUser(user1, true, true, { from: admin });
+
+                await expectRevert(
+                    manager.removeUser(admin, { from: user1}),
+                    "You can't remove admin"
+                );
+            });
+        });
+
+        describe("Remove user with one children", () => {
+            const totalSize = 5;
+            const size = 1;
+            let manager;
+            beforeEach('Deploy contract', async () => {
+                manager = await Manager.new(totalSize, { from: admin });
+            });
+
+            it('should remove user1 with admin', async () => {
+                const expectedAdminChildren = [user2];
+                await manager.addUser(user1, true, true, { from: admin });
+                await manager.addUser(user2, true, true, { from: user1 });
+
+                await manager.removeUser(user1, { from: admin});
+
+
+                const { parentUser } = await manager.users(user2);
+                parentUser.should.be.equal(admin);
+
+                const children = await manager.getUserChildren(admin);
+                expect(children).to.have.all.members(expectedAdminChildren);
+
+            });
+        });
+
+        describe("Remove user with two children", () => {
+            const totalSize = 5;
+            const size = 1;
+            let manager;
+            beforeEach('Deploy contract', async () => {
+                manager = await Manager.new(totalSize, { from: admin });
+            });
+
+            it('should remove user1 with admin', async () => {
+                const expectedAdminChildren = [user2];
+                const expectedUser2Children = [user3];
+                await manager.addUser(user1, true, true, { from: admin });
+                await manager.addUser(user2, true, true, { from: user1 });
+                await manager.addUser(user3, true, true, { from: user1 });
+
+                await manager.removeUser(user1, { from: admin});
+
+
+                const { parentUser } = await manager.users(user2);
+                parentUser.should.be.equal(admin);
+
+                const { parentUser: user3Parent } = await manager.users(user3);
+                user3Parent.should.be.equal(user2);
+
+                const adminChildren = await manager.getUserChildren(admin);
+                expect(adminChildren).to.have.all.members(expectedAdminChildren);
+                const user2Children = await manager.getUserChildren(user2);
+                expect(user2Children).to.have.all.members(expectedUser2Children);
+
+            });
+        });
+
+        describe("Remove user with two children and the replace user has two children", () => {
+            const totalSize = 8;
+            const size = 1;
+            let manager;
+            beforeEach('Deploy contract', async () => {
+                manager = await Manager.new(totalSize, { from: admin });
+            });
+
+            it('should remove user1 with admin', async () => {
+                const expectedAdminChildren = [user2];
+                const expectedUser2Children = [user4,user5,user3];
+                await manager.addUser(user1, true, true, { from: admin });
+                await manager.addUser(user2, true, true, { from: user1 });
+                await manager.addUser(user3, true, true, { from: user1 });
+                await manager.addUser(user4, true, true, { from: user2 });
+                await manager.addUser(user5, true, true, { from: user2 });
+
+                await manager.removeUser(user1, { from: admin});
+
+
+                const { parentUser: user2Parent } = await manager.users(user2);
+                const { parentUser: user3Parent } = await manager.users(user3);
+                user2Parent.should.be.equal(admin);
+                user3Parent.should.be.equal(user2);
+
+                const adminChildren = await manager.getUserChildren(admin);
+                expect(adminChildren).to.have.all.members(expectedAdminChildren);
+                const user2Children = await manager.getUserChildren(user2);
+                expect(user2Children).to.have.all.members(expectedUser2Children);
+
             });
         });
     });
