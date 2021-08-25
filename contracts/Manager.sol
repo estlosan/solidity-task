@@ -69,19 +69,21 @@ contract Manager {
      * @param _canRemove remove user permission
      */
     function addUser(address userToAdd, bool _canAdd, bool _canRemove) external onlyExists() onlyAdd() {
+        if(_canRemove) {
+            require(
+                users[msg.sender].canRemove, 
+                "You can't add users with permissions that you don't have"
+            );
+        }
         users[msg.sender].childrenUsers.push(userToAdd);
         _addUser(userToAdd, msg.sender, _canAdd, _canRemove);
     }
     
     /**
      * @dev Remove user and replace removed by one of his children
-     * @param userToAdd address new user
-     * @param _parentUser address parent of new user
-     * @param _canAdd add new user permission
-     * @param _canRemove remove user permission
+     * @param userAddr address user to remove
      */
-    function removeUser() external onlyExists() onlyRemove() {
-        //TODO 
+    function removeUser(address userAddr) external onlyExists() onlyRemove() {
         size--;
         //event
     }
