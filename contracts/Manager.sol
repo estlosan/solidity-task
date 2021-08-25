@@ -102,16 +102,8 @@ contract Manager {
      */
     function removeUser(address userAddr) external onlyExists() onlyRemove() {
         require(userAddr != admin, "You can't remove admin");
-        address[] memory childrenUser = users[userAddr].childrenUsers;
-        address newLeader;
-        if(childrenUser.length >= 1) {
-            newLeader = childrenUser[0];
-            users[newLeader].parentUser = users[userAddr].parentUser;
-            for(uint i = 1; i < childrenUser.length; i++){
-                users[newLeader].childrenUsers.push(childrenUser[i]);
-                users[childrenUser[i]].parentUser = newLeader;
-            }
-        }
+        
+        address newLeader = findNewUser(userAddr);
 
         address[] storage parentChilds = users[users[userAddr].parentUser].childrenUsers;
         delete users[userAddr];
@@ -146,6 +138,27 @@ contract Manager {
 
     function getUserChildren(address userAddr) external view returns (address[] memory) {
         return users[userAddr].childrenUsers;
+    }
+
+
+    /**
+     * @dev Find new user that replace removed user
+     * @param userToAdd address user to remove
+     */
+    function findNewUser(address userAddr) private returns(address){
+        address[] memory childrenUser = users[userAddr].childrenUsers;
+        address newLeader;
+
+        if(childrenUser.length >= 1) {
+            newLeader = childrenUser[0];
+            users[newLeader].parentUser = users[userAddr].parentUser;
+            for(uint i = 1; i < childrenUser.length; i++){
+                users[newLeader].childrenUsers.push(childrenUser[i]);
+                users[childrenUser[i]].parentUser = newLeader;
+            }
+        }
+
+        return newLeader;
     }
     
     /**
