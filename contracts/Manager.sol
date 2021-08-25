@@ -46,7 +46,7 @@ contract Manager {
     modifier onlyRemove() {
         require(
             users[msg.sender].canRemove == true,
-            "You don't have add permission"
+            "You don't have remove permission"
         );
         _;
     }
@@ -61,6 +61,10 @@ contract Manager {
         );
         _;
     }
+
+    function getUserChildren(address userAddr) public view returns (address[] memory) {
+        return users[userAddr].childrenUsers;
+    }
     
     /**
      * @dev Add new user to hierarchy
@@ -69,6 +73,7 @@ contract Manager {
      * @param _canRemove remove user permission
      */
     function addUser(address userToAdd, bool _canAdd, bool _canRemove) external onlyExists() onlyAdd() {
+        require(!users[userToAdd].isUser, 'User exists');
         require(size < totalSize, 'Hierarchy total size exceeded');
         if(_canRemove) {
             require(
@@ -85,6 +90,20 @@ contract Manager {
      * @param userAddr address user to remove
      */
     function removeUser(address userAddr) external onlyExists() onlyRemove() {
+        require(userAddr != admin, "You can't remove admin");
+        address[] storage parentChilds = users[users[userAddr].parentUser].childrenUsers;
+        delete users[userAddr];
+        if(parentChilds.length > 1) {
+            for(uint i = 0; i < parentChilds.length; i++) {
+                if(parentChilds[i] == userAddr){
+                    address auxAddr = parentChilds[parentChilds.length - 1];
+                    parentChilds[parentChilds.length -1] = userAddr;
+                    parentChilds[i] = auxAddr;
+                    break;
+                }
+            }
+        }
+        parentChilds.pop();
         size--;
         //event
     }
