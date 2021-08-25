@@ -27,7 +27,8 @@ contract("Manager", ([admin, user1, user2, user3]) => {
     }) 
 
     describe("Add new user first layer", () => {
-        const size = 5;
+        const totalSize = 5;
+        const size = 2;
         let manager;
         beforeEach('Deploy contract', async () => {
             manager = await Manager.new(size, { from: admin });
@@ -38,6 +39,7 @@ contract("Manager", ([admin, user1, user2, user3]) => {
             const expectedCanRemove = true;
             await manager.addUser(user1, expectedCanAdd, expectedCanRemove, { from: admin });
 
+            (await manager.size()).toNumber().should.be.equal(size);
             const { parentUser, canAdd, canRemove, isUser } = await manager.users(user1);
             parentUser.should.be.equal(admin);
             canAdd.should.be.equal(expectedCanAdd);
@@ -50,6 +52,7 @@ contract("Manager", ([admin, user1, user2, user3]) => {
             const expectedCanRemove = false;
             await manager.addUser(user1, expectedCanAdd, expectedCanRemove, { from: admin });
 
+            (await manager.size()).toNumber().should.be.equal(size);
             const { parentUser, canAdd, canRemove, isUser } = await manager.users(user1);
             parentUser.should.be.equal(admin);
             canAdd.should.be.equal(expectedCanAdd);
@@ -62,6 +65,7 @@ contract("Manager", ([admin, user1, user2, user3]) => {
             const expectedCanRemove = true;
             await manager.addUser(user1, expectedCanAdd, expectedCanRemove, { from: admin });
 
+            (await manager.size()).toNumber().should.be.equal(size);
             const { parentUser, canAdd, canRemove, isUser } = await manager.users(user1);
             parentUser.should.be.equal(admin);
             canAdd.should.be.equal(expectedCanAdd);
@@ -74,6 +78,7 @@ contract("Manager", ([admin, user1, user2, user3]) => {
             const expectedCanRemove = false;
             await manager.addUser(user1, expectedCanAdd, expectedCanRemove, { from: admin });
 
+            (await manager.size()).toNumber().should.be.equal(size);
             const { parentUser, canAdd, canRemove, isUser } = await manager.users(user1);
             parentUser.should.be.equal(admin);
             canAdd.should.be.equal(expectedCanAdd);
@@ -91,10 +96,11 @@ contract("Manager", ([admin, user1, user2, user3]) => {
     });
 
     describe("Add new user second layer", () => {
-        const size = 5;
+        const totalSize = 5;
+        const size = 3;
         let manager;
         beforeEach('Deploy contract', async () => {
-            manager = await Manager.new(size, { from: admin });
+            manager = await Manager.new(totalSize, { from: admin });
         });
 
         it('should add new user with user1 with all permission', async () => {
@@ -104,6 +110,7 @@ contract("Manager", ([admin, user1, user2, user3]) => {
             const expectedCanRemove = true;
             await manager.addUser(user2, expectedCanAdd, expectedCanRemove, { from: user1 });
 
+            (await manager.size()).toNumber().should.be.equal(size);
             const { parentUser, canAdd, canRemove, isUser } = await manager.users(user2);
             parentUser.should.be.equal(user1);
             canAdd.should.be.equal(expectedCanAdd);
@@ -134,5 +141,23 @@ contract("Manager", ([admin, user1, user2, user3]) => {
 
     describe("Remove user", () => {
 
+    });
+
+    describe("Check total size", () => {
+        const totalSize = 3;
+        let manager;
+        beforeEach('Deploy contract', async () => {
+            manager = await Manager.new(totalSize, { from: admin });
+        });
+
+        it('should deny add new user', async () => {
+            await manager.addUser(user1, true, true, { from: admin });
+            await manager.addUser(user1, true, true, { from: admin });
+            
+            await expectRevert(
+                manager.addUser(user1, true, true, { from: admin }),
+                "Hierarchy total size exceeded"
+            );
+        });
     });
 })

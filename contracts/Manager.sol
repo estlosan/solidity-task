@@ -69,6 +69,7 @@ contract Manager {
      * @param _canRemove remove user permission
      */
     function addUser(address userToAdd, bool _canAdd, bool _canRemove) external onlyExists() onlyAdd() {
+        require(size < totalSize, 'Hierarchy total size exceeded');
         if(_canRemove) {
             require(
                 users[msg.sender].canRemove, 
@@ -97,7 +98,6 @@ contract Manager {
      * @param _canRemove remove user permission
      */
     function _addUser(address userToAdd, address _parentUser, bool _canAdd, bool _canRemove) internal {
-        require(size <= totalSize, "Total hierarchy overcome");
         User memory user;
         user.parentUser = _parentUser;
         user.canAdd = _canAdd;
