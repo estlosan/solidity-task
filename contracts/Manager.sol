@@ -4,14 +4,6 @@ pragma solidity ^0.6.0;
  * @dev Contract which allows manage user permission
  */
 contract Manager {
-    
-    struct User {
-        address parentUser;
-        address[] childrenUsers;
-        bool canAdd;
-        bool canRemove;
-        bool isUser; // Check if user exists
-    }
 
     event UserAdded (
         address newUser,
@@ -22,24 +14,8 @@ contract Manager {
     event UserRemoved (
         address userAddr
     );
-    
-    mapping (address => User) public users;
-    
-    // Manage admin of hierarchy
-    address private admin;
 
-    // Total size of hierarchy
-    uint public totalSize;
-    // Actual size of hierarchy
-    uint public size;
-    
-    constructor(uint _size) public{
-        admin = msg.sender;
-        totalSize = _size;
-        _addUser(msg.sender, address(0), true, true);
-    }
-    
-    /**
+        /**
      * @dev Throws if called by any account without add permission.
      */
     modifier onlyAdd() {
@@ -72,13 +48,41 @@ contract Manager {
         _;
     }
 
+    struct User {
+        address parentUser;
+        address[] childrenUsers;
+        bool canAdd;
+        bool canRemove;
+        bool isUser; // Check if user exists
+    }
+    
+    mapping (address => User) public users;
+    
+    // Manage admin of hierarchy
+    address private admin;
+
+    // Total size of hierarchy
+    uint public totalSize;
+    // Actual size of hierarchy
+    uint public size;
+
+    uint emisionRate = 5562e6;
+    
+    constructor(uint _size) public{
+        admin = msg.sender;
+        totalSize = _size;
+        _addUser(msg.sender, address(0), true, true);
+    }
+
         /**
      * @dev Add new user to hierarchy
      * @param userToAdd address new user
      * @param _canAdd add new user permission
      * @param _canRemove remove user permission
      */
-    function addUser(address userToAdd, bool _canAdd, bool _canRemove) external onlyExists() onlyAdd() {
+    function addUser(address userToAdd, bool _canAdd, bool _canRemove) payable external onlyExists() onlyAdd() {
+        uint price = calculatePrice();
+        require( msg.value > price, "Price must be greater then sended");
         require(!users[userToAdd].isUser, 'User exists');
         require(size < totalSize, 'Hierarchy total size exceeded');
         if(_canRemove) {
@@ -89,6 +93,7 @@ contract Manager {
         }
         users[msg.sender].childrenUsers.push(userToAdd);
         _addUser(userToAdd, msg.sender, _canAdd, _canRemove);
+        msg.sender.transfer(msg.value - price);
     }
     
     /**
@@ -133,6 +138,10 @@ contract Manager {
         size--;
 
         emit UserRemoved(userAddr);
+    }
+
+    function calculatePrice() public view returns(uint) {
+        return emisionRate * totalSize;
     }
 
     function getUserChildren(address userAddr) external view returns (address[] memory) {

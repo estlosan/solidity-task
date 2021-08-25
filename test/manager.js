@@ -4,6 +4,7 @@ const Manager = artifacts.require('Manager');
 const {
     expectRevert,
   } = require('@openzeppelin/test-helpers');
+const { toWei } = require('web3-utils');
 
 contract("Manager", ([admin, user1, user2, user3, user4, user5]) => {
 
@@ -38,7 +39,9 @@ contract("Manager", ([admin, user1, user2, user3, user4, user5]) => {
             const expectedCanAdd = true;
             const expectedCanRemove = true;
             const expectedChildren = [user1];
-            await manager.addUser(user1, expectedCanAdd, expectedCanRemove, { from: admin });
+            await manager.addUser(user1, expectedCanAdd, expectedCanRemove, { 
+                from: admin, value: toWei('0.1', 'ether') 
+            });
 
             (await manager.size()).toNumber().should.be.equal(size);
             const children = await manager.getUserChildren(admin);
@@ -54,7 +57,9 @@ contract("Manager", ([admin, user1, user2, user3, user4, user5]) => {
             const expectedCanAdd = true;
             const expectedCanRemove = false;
             const expectedChildren = [user1];
-            await manager.addUser(user1, expectedCanAdd, expectedCanRemove, { from: admin });
+            await manager.addUser(user1, expectedCanAdd, expectedCanRemove, { 
+                from: admin, value: toWei('0.1', 'ether') 
+            });
 
             (await manager.size()).toNumber().should.be.equal(size);
             const children = await manager.getUserChildren(admin);
@@ -70,7 +75,9 @@ contract("Manager", ([admin, user1, user2, user3, user4, user5]) => {
             const expectedCanAdd = false;
             const expectedCanRemove = true;
             const expectedChildren = [user1];
-            await manager.addUser(user1, expectedCanAdd, expectedCanRemove, { from: admin });
+            await manager.addUser(user1, expectedCanAdd, expectedCanRemove, { 
+                from: admin, value: toWei('0.1', 'ether') 
+            });
 
             (await manager.size()).toNumber().should.be.equal(size);
             const children = await manager.getUserChildren(admin);
@@ -86,7 +93,9 @@ contract("Manager", ([admin, user1, user2, user3, user4, user5]) => {
             const expectedCanAdd = false;
             const expectedCanRemove = false;
             const expectedChildren = [user1];
-            await manager.addUser(user1, expectedCanAdd, expectedCanRemove, { from: admin });
+            await manager.addUser(user1, expectedCanAdd, expectedCanRemove, { 
+                from: admin, value: toWei('0.1', 'ether') 
+            });
 
             (await manager.size()).toNumber().should.be.equal(size);
             const children = await manager.getUserChildren(admin);
@@ -103,8 +112,12 @@ contract("Manager", ([admin, user1, user2, user3, user4, user5]) => {
             const expectedCanRemove = false;
             const expectedChildren = [user1, user2];
             const expectedSize = 3;
-            await manager.addUser(user1, expectedCanAdd, expectedCanRemove, { from: admin });
-            await manager.addUser(user2, expectedCanAdd, expectedCanRemove, { from: admin });
+            await manager.addUser(user1, expectedCanAdd, expectedCanRemove, { 
+                from: admin, value: toWei('0.1', 'ether') 
+            });
+            await manager.addUser(user2, expectedCanAdd, expectedCanRemove, { 
+                from: admin, value: toWei('0.1', 'ether') 
+            });
 
             (await manager.size()).toNumber().should.be.equal(expectedSize);
             const children = await manager.getUserChildren(admin);
@@ -114,7 +127,9 @@ contract("Manager", ([admin, user1, user2, user3, user4, user5]) => {
         it('should deny add new user with user1 (outside hierarchy)', async () => {
             const expectedRevert = "You don't exist in hierarchy";
             await expectRevert(
-                manager.addUser(user1, true, true, { from: user1 }),
+                manager.addUser(user1, true, true, { 
+                    from: user1, value: toWei('0.1', 'ether') 
+                }),
                 expectedRevert
             );
         })
@@ -129,11 +144,15 @@ contract("Manager", ([admin, user1, user2, user3, user4, user5]) => {
         });
 
         it('should add new user with user1 with all permission', async () => {
-            await manager.addUser(user1, true, true, { from: admin });
+            await manager.addUser(user1, true, true, { 
+                from: admin, value: toWei('0.1', 'ether') 
+            });
 
             const expectedCanAdd = true;
             const expectedCanRemove = true;
-            await manager.addUser(user2, expectedCanAdd, expectedCanRemove, { from: user1 });
+            await manager.addUser(user2, expectedCanAdd, expectedCanRemove, { 
+                from: user1, value: toWei('0.1', 'ether') 
+            });
 
             (await manager.size()).toNumber().should.be.equal(size);
             const { parentUser, canAdd, canRemove, isUser } = await manager.users(user2);
@@ -144,31 +163,43 @@ contract("Manager", ([admin, user1, user2, user3, user4, user5]) => {
         });
 
         it('should deny add new user with remove permission if user1 does not have it', async () => {
-            await manager.addUser(user1, true, false, { from: admin });
+            await manager.addUser(user1, true, false, { 
+                from: admin, value: toWei('0.1', 'ether') 
+            });
 
             const expectedRevert = "You can't add users with permissions that you don't have";
             await expectRevert(
-                manager.addUser(user2, true, true, { from: user1 }),
+                manager.addUser(user2, true, true, { 
+                    from: user1, value: toWei('0.1', 'ether') 
+                }),
                 expectedRevert
             );
         });
 
         it('should deny add new user with no user add permission', async () => {
-            await manager.addUser(user1, false, false, { from: admin });
+            await manager.addUser(user1, false, false, { 
+                from: admin, value: toWei('0.1', 'ether') 
+            });
 
             const expectedRevert = "You don't have add permission";
             await expectRevert(
-                manager.addUser(user2, false, false, { from: user1 }),
+                manager.addUser(user2, false, false, { 
+                    from: user1, value: toWei('0.1', 'ether') 
+                }),
                 expectedRevert
             );
         })
 
         it('should deny add same user twice', async () => {
-            await manager.addUser(user1, true, true, { from: admin });
+            await manager.addUser(user1, true, true, { 
+                from: admin, value: toWei('0.1', 'ether') 
+            });
 
             const expectedRevert = "User exists";
             await expectRevert(
-                manager.addUser(user1, true, true, { from: user1 }),
+                manager.addUser(user1, true, true, { 
+                    from: user1, value: toWei('0.1', 'ether') 
+                }),
                 expectedRevert
             );
         })
@@ -185,7 +216,9 @@ contract("Manager", ([admin, user1, user2, user3, user4, user5]) => {
 
             it('should remove user1 with admin', async () => {
                 const expectedChildren = [];
-                await manager.addUser(user1, true, true, { from: admin });
+                await manager.addUser(user1, true, true, { 
+                    from: admin, value: toWei('0.1', 'ether') 
+                });
 
                 await manager.removeUser(user1, { from: admin });
     
@@ -197,7 +230,9 @@ contract("Manager", ([admin, user1, user2, user3, user4, user5]) => {
             });
 
             it('should deny remove with user 2 (outside hierarchy)', async () => {
-                await manager.addUser(user1, true, true, { from: admin });
+                await manager.addUser(user1, true, true, { 
+                    from: admin, value: toWei('0.1', 'ether') 
+                });
 
                 await expectRevert(
                     manager.removeUser(user1, { from: user2 }),
@@ -206,8 +241,12 @@ contract("Manager", ([admin, user1, user2, user3, user4, user5]) => {
             });
 
             it('should deny remove user 1 with user 2 (no remove permission)', async () => {
-                await manager.addUser(user1, true, true, { from: admin });
-                await manager.addUser(user2, true, false, { from: admin });
+                await manager.addUser(user1, true, true, { 
+                    from: admin, value: toWei('0.1', 'ether') 
+                });
+                await manager.addUser(user2, true, false, { 
+                    from: admin, value: toWei('0.1', 'ether') 
+                });
 
                 await expectRevert(
                     manager.removeUser(user1, { from: user2 }),
@@ -216,7 +255,9 @@ contract("Manager", ([admin, user1, user2, user3, user4, user5]) => {
             });
 
             it('should deny remove admin with user 1', async () => {
-                await manager.addUser(user1, true, true, { from: admin });
+                await manager.addUser(user1, true, true, { 
+                    from: admin, value: toWei('0.1', 'ether') 
+                });
 
                 await expectRevert(
                     manager.removeUser(admin, { from: user1}),
@@ -235,8 +276,12 @@ contract("Manager", ([admin, user1, user2, user3, user4, user5]) => {
 
             it('should remove user1 with admin', async () => {
                 const expectedAdminChildren = [user2];
-                await manager.addUser(user1, true, true, { from: admin });
-                await manager.addUser(user2, true, true, { from: user1 });
+                await manager.addUser(user1, true, true, { 
+                    from: admin, value: toWei('0.1', 'ether') 
+                });
+                await manager.addUser(user2, true, true, { 
+                    from: user1, value: toWei('0.1', 'ether') 
+                });
 
                 await manager.removeUser(user1, { from: admin});
 
@@ -261,9 +306,15 @@ contract("Manager", ([admin, user1, user2, user3, user4, user5]) => {
             it('should remove user1 with admin', async () => {
                 const expectedAdminChildren = [user2];
                 const expectedUser2Children = [user3];
-                await manager.addUser(user1, true, true, { from: admin });
-                await manager.addUser(user2, true, true, { from: user1 });
-                await manager.addUser(user3, true, true, { from: user1 });
+                await manager.addUser(user1, true, true, { 
+                    from: admin, value: toWei('0.1', 'ether') 
+                });
+                await manager.addUser(user2, true, true, { 
+                    from: user1, value: toWei('0.1', 'ether') 
+                });
+                await manager.addUser(user3, true, true, { 
+                    from: user1, value: toWei('0.1', 'ether') 
+                });
 
                 await manager.removeUser(user1, { from: admin});
 
@@ -293,11 +344,21 @@ contract("Manager", ([admin, user1, user2, user3, user4, user5]) => {
             it('should remove user1 with admin', async () => {
                 const expectedAdminChildren = [user2];
                 const expectedUser2Children = [user4,user5,user3];
-                await manager.addUser(user1, true, true, { from: admin });
-                await manager.addUser(user2, true, true, { from: user1 });
-                await manager.addUser(user3, true, true, { from: user1 });
-                await manager.addUser(user4, true, true, { from: user2 });
-                await manager.addUser(user5, true, true, { from: user2 });
+                await manager.addUser(user1, true, true, { 
+                    from: admin, value: toWei('0.1', 'ether') 
+                });
+                await manager.addUser(user2, true, true, { 
+                    from: user1, value: toWei('0.1', 'ether') 
+                });
+                await manager.addUser(user3, true, true, { 
+                    from: user1, value: toWei('0.1', 'ether') 
+                });
+                await manager.addUser(user4, true, true, { 
+                    from: user2, value: toWei('0.1', 'ether') 
+                });
+                await manager.addUser(user5, true, true, { 
+                    from: user2, value: toWei('0.1', 'ether') 
+                });
 
                 await manager.removeUser(user1, { from: admin});
 
@@ -316,6 +377,47 @@ contract("Manager", ([admin, user1, user2, user3, user4, user5]) => {
         });
     });
 
+    describe("Check add price", () => {
+        const emisionRate = 5562e6;
+        let manager;
+        it('should deny add new user', async () => {
+            const totalSize = 5;
+            const expectedPrice = totalSize * emisionRate;
+            manager = await Manager.new(totalSize, { from: admin });
+            await manager.addUser(user1, true, true, { 
+                from: admin, value: toWei('0.1', 'ether') 
+            });
+            (await manager.calculatePrice()).toNumber().should.be.equal(expectedPrice);
+            
+        });
+
+        it('should add new user at double price', async () => {
+            const totalSize = 5;
+            const expectedPrice = totalSize * emisionRate;
+            manager = await Manager.new(totalSize, { from: admin });
+            await manager.addUser(user1, true, true, { 
+                from: admin, value: toWei('0.1', 'ether') 
+            });
+            (await manager.calculatePrice()).toNumber().should.be.equal(expectedPrice);
+
+        });
+
+        it('should deny add user when no ether sent', async () => {
+            const totalSize = 5;
+            manager = await Manager.new(totalSize, { from: admin });
+            await manager.addUser(user1, true, true, { 
+                from: admin, value: toWei('0.1', 'ether') 
+            });
+            
+            await expectRevert(
+                manager.addUser(user2, true, true, { 
+                    from: admin 
+                }),
+                "Price must be greater then sended"
+            );
+        });
+    });
+
     describe("Check total size", () => {
         const totalSize = 3;
         let manager;
@@ -324,11 +426,17 @@ contract("Manager", ([admin, user1, user2, user3, user4, user5]) => {
         });
 
         it('should deny add new user', async () => {
-            await manager.addUser(user1, true, true, { from: admin });
-            await manager.addUser(user2, true, true, { from: admin });
+            await manager.addUser(user1, true, true, { 
+                from: admin, value: toWei('0.1', 'ether') 
+            });
+            await manager.addUser(user2, true, true, { 
+                from: admin, value: toWei('0.1', 'ether') 
+            });
             
             await expectRevert(
-                manager.addUser(user3, true, true, { from: admin }),
+                manager.addUser(user3, true, true, { 
+                    from: admin, value: toWei('0.1', 'ether') 
+                }),
                 "Hierarchy total size exceeded"
             );
         });
